@@ -1,0 +1,42 @@
+horizons: [1, 5]
+
+# See docs/REPORT.md for the full mathematical definition of each target.
+definitions:
+  direction:
+    kind: binary
+    return_basis: close_to_close
+    description: "1 if the forward simple return over the horizon is strictly positive"
+
+  excess_direction:
+    kind: binary
+    return_basis: close_to_close
+    benchmark: SPY
+    description: "1 if the forward return exceeds the benchmark's forward return over the same horizon"
+
+  direction_open_anchored:
+    kind: binary
+    return_basis: next_open_to_close
+    description: "Execution-realistic variant: return measured from the next open, not the signal close"
+
+  ternary:
+    kind: ternary
+    return_basis: close_to_close
+    threshold:
+      method: vol_scaled          # tau_t = kappa * ewma_sigma_t * sqrt(h)
+      ewma_lambda: 0.94           # RiskMetrics decay
+      min_periods: 60
+      target_neutral_fraction: 0.3333   # kappa is solved for inside each training fold
+      kappa_search: [0.05, 1.50]
+    description: "Down / neutral / up with a volatility-scaled neutral band"
+
+  ternary_quantile:
+    kind: ternary
+    return_basis: close_to_close
+    threshold:
+      method: train_quantile      # ablation: fixed tertiles of the training-fold returns
+      lower_quantile: 0.3333
+      upper_quantile: 0.6667
+    description: "Ablation for the vol-scaled band: unconditional training-fold tertiles"
+
+primary: direction
+secondary: excess_direction

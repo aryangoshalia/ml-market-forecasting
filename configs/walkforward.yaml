@@ -1,0 +1,16 @@
+scheme: anchored          # anchored (expanding) is primary; "rolling" is the robustness variant
+rolling_train_sessions: 1260
+
+initial_train_sessions: 1512   # ~6 years before the first test fold
+test_sessions: 126             # ~6 months per fold
+step_sessions: 126             # non-overlapping test folds
+
+# The label at the last training date depends on prices up to h sessions later, which
+# fall inside the test window. Those rows are purged, and an additional embargo keeps
+# serially correlated features from bridging the boundary.
+purge_sessions: null           # null resolves to the target horizon h
+embargo_sessions: 5
+
+inner_validation_sessions: 120 # tail of the training window: tuning, calibration, threshold
+
+seed: 17

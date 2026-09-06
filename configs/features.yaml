@@ -1,0 +1,66 @@
+version: v1
+
+# Every feature must be scale free: a return, a ratio, a z-score or a bounded
+# oscillator. Raw prices, raw moving-average levels and raw share volume are
+# rejected by the pipeline because the model is pooled across tickers and across
+# twenty years, and those quantities are comparable across neither.
+
+groups:
+  returns:
+    enabled: true
+    horizons: [1, 3, 5, 10, 20]
+    lags: [1, 2, 3, 4, 5]
+
+  momentum:
+    enabled: true
+    sma_windows: [10, 20, 50, 200]
+    sma_ratio_pairs: [[20, 50], [50, 200]]
+    rsi_window: 14
+    macd: {fast: 12, slow: 26, signal: 9}
+    skip_month_momentum: {lookback: 252, skip: 21}
+    price_position_window: 252
+
+  volatility:
+    enabled: true
+    windows: [5, 20, 60]
+    ratio_pairs: [[5, 20], [20, 60]]
+    atr_window: 14
+    parkinson_window: 20
+    downside_window: 20
+    standardised_move_window: 20
+
+  volume:
+    enabled: true
+    relative_window: 20
+    zscore_window: 20
+    dollar_volume_window: 20
+    price_volume_corr_window: 20
+
+  trend:
+    enabled: true
+    efficiency_ratio_window: 20
+    extreme_window: 252
+    up_day_window: 20
+
+  market:
+    enabled: true
+    benchmark_return_horizons: [1, 5, 20]
+    benchmark_vol_window: 20
+    benchmark_sma_window: 50
+    beta_window: 60
+    correlation_window: 60
+    residual_return_horizon: 5
+    vix_zscore_window: 60
+    vix_change_horizon: 5
+    sector_return_horizon: 5
+
+  calendar:
+    enabled: true
+    day_of_week: true
+    month: true
+    days_to_month_end: true
+
+# Rows are dropped, never back-filled. The warm-up length is the longest lookback
+# used by any enabled feature; rows before it have undefined features by construction.
+warmup_policy: drop
+max_forward_fill_sessions: 3   # market-context series only, with a staleness counter

@@ -1,0 +1,20 @@
+provider: yfinance
+fallback_provider: stooq
+
+start_date: "2005-01-01"
+end_date: null            # null means "latest available session"
+
+cache_dir: data/cache
+cache_ttl_hours: 12       # a refetch is also forced whenever a new session has closed
+
+exchange_calendar: XNYS
+
+request_timeout_seconds: 30
+max_retries: 3
+retry_backoff_seconds: 2.0
+
+validation:
+  min_rows: 400                   # ~19 months, enough for a 252-day lookback plus targets
+  max_missing_session_ratio: 0.02
+  max_abs_daily_return: 0.60      # above this, flag as a possible unadjusted corporate action
+  allow_zero_volume_ratio: 0.02

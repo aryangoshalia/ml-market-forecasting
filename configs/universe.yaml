@@ -1,0 +1,114 @@
+# Asset groups are fixed up front and never re-drawn. DEV drives all iteration and
+# model selection; VAL is used for sanity checks between phases; TEST is scored once,
+# at the end, to estimate generalisation to unseen assets.
+#
+# Groups are stratified by sector rather than sampled at random so that no group is
+# dominated by a single sector, which would confound "unseen asset" with "unseen sector".
+
+benchmark: SPY
+volatility_index: "^VIX"
+
+groups:
+  dev:
+    - AAPL   # tech
+    - MSFT
+    - CSCO
+    - TXN
+    - ORCL
+    - GOOGL
+    - NVDA   # tech, high volatility
+    - JPM    # financials
+    - BAC
+    - AXP
+    - JNJ    # healthcare
+    - MRK
+    - UNH
+    - AMZN   # consumer discretionary
+    - MCD
+    - WMT    # consumer staples
+    - KO
+    - XOM    # energy
+    - CAT    # industrials
+    - HON
+  val:
+    - ADBE
+    - QCOM
+    - IBM
+    - GS
+    - SCHW
+    - PFE
+    - LLY
+    - HD
+    - PG
+    - CVX
+    - BA
+  test:
+    - INTC
+    - CRM
+    - META
+    - MS
+    - C
+    - ABT
+    - AMGN
+    - COST
+    - NKE
+    - NEE
+    - TSLA
+
+# Sector ETF proxies. XLC (communication services) only began trading in 2018, so
+# names that GICS assigns to that sector are mapped to XLK to keep one continuous
+# series across the full sample. This is a documented approximation, not an oversight.
+sector_etfs:
+  technology: XLK
+  financials: XLF
+  healthcare: XLV
+  consumer_discretionary: XLY
+  consumer_staples: XLP
+  energy: XLE
+  industrials: XLI
+  utilities: XLU
+  materials: XLB
+
+sector_map:
+  AAPL: technology
+  MSFT: technology
+  CSCO: technology
+  TXN: technology
+  ORCL: technology
+  GOOGL: technology
+  NVDA: technology
+  ADBE: technology
+  QCOM: technology
+  IBM: technology
+  INTC: technology
+  CRM: technology
+  META: technology
+  JPM: financials
+  BAC: financials
+  AXP: financials
+  GS: financials
+  SCHW: financials
+  MS: financials
+  C: financials
+  JNJ: healthcare
+  MRK: healthcare
+  UNH: healthcare
+  PFE: healthcare
+  LLY: healthcare
+  ABT: healthcare
+  AMGN: healthcare
+  AMZN: consumer_discretionary
+  MCD: consumer_discretionary
+  HD: consumer_discretionary
+  NKE: consumer_discretionary
+  TSLA: consumer_discretionary
+  WMT: consumer_staples
+  KO: consumer_staples
+  PG: consumer_staples
+  COST: consumer_staples
+  XOM: energy
+  CVX: energy
+  CAT: industrials
+  HON: industrials
+  BA: industrials
+  NEE: utilities
