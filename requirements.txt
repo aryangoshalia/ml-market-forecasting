@@ -1,0 +1,39 @@
+# Runtime dependencies, pinned to the versions this project was developed and tested against.
+#     python -m venv .venv && source .venv/bin/activate
+#     pip install -r requirements.txt
+#
+# On macOS, xgboost and lightgbm link against the OpenMP runtime, which is not bundled
+# with the wheels: install it first with `brew install libomp`.
+
+# core numerics
+numpy==1.26.4                    # pinned below 2.0: shap and hmmlearn still break against it
+pandas==2.3.3
+scipy==1.17.1
+statsmodels==0.15.0
+
+# storage
+pyarrow==25.0.1
+
+# modelling
+scikit-learn==1.9.0
+xgboost==3.2.0
+lightgbm==4.7.0
+hmmlearn==0.3.3
+shap==0.49.1
+
+# market data
+yfinance==1.7.0
+pandas-datareader==0.11.1
+pandas-market-calendars==5.4.0
+httpx==0.28.1
+
+# configuration
+pydantic==2.13.5
+PyYAML==6.0.3
+
+# figures for the written report
+matplotlib==3.11.1
+
+# api
+fastapi==0.141.1
+uvicorn[standard]==0.52.4
