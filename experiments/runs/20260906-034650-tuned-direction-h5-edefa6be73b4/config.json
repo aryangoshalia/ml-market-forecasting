@@ -1,0 +1,35 @@
+{
+  "target": "direction",
+  "horizon": 5,
+  "models": [
+    "majority",
+    "always_long",
+    "persistence",
+    "logistic(C=3.0)",
+    "elastic_net(C=0.1,l1_ratio=0.7)",
+    "random_forest(max_depth=4,max_features=sqrt,min_samples_leaf=100,n_estimators=300)",
+    "xgboost(colsample_bytree=0.5,learning_rate=0.03,max_depth=6,min_child_weight=10,n_estimators=700,reg_lambda=1.0,subsample=1.0)",
+    "lightgbm(colsample_bytree=0.8,learning_rate=0.05,min_child_samples=50,n_estimators=400,num_leaves=15,reg_lambda=20.0)"
+  ],
+  "calibration": "isotonic",
+  "threshold_metric": "f1",
+  "groups": [
+    "dev"
+  ],
+  "start": null,
+  "max_folds": null,
+  "seed": 17,
+  "scheme": "anchored",
+  "walkforward": {
+    "scheme": "anchored",
+    "rolling_train_sessions": 1260,
+    "initial_train_sessions": 1512,
+    "test_sessions": 126,
+    "step_sessions": 126,
+    "purge_sessions": null,
+    "embargo_sessions": 5,
+    "inner_validation_sessions": 120,
+    "seed": 17
+  },
+  "feature_version": "v1"
+}

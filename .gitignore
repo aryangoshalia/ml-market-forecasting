@@ -13,11 +13,16 @@ htmlcov/
 
 data/cache/
 artifacts/
-experiments/runs/
 mlruns/
 *.parquet
 *.pkl
 *.joblib
+
+# Experiment records are committed; raw predictions are large and regenerable.
+experiments/runs/**/predictions.parquet
+!experiments/runs/
+!experiments/runs/**/fold_metrics.parquet
+!experiments/runs/index.jsonl
 
 .env
 .env.local
