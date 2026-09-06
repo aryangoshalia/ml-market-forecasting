@@ -1,0 +1,35 @@
+selected_on:
+  target: direction
+  horizon: 1
+  groups:
+  - dev
+  folds: 3
+  trials: 20
+  note: Chosen on the fit and inner windows of the earliest folds only, then frozen
+    for every later fold. No test window influenced this choice.
+params:
+  logistic:
+    C: 3.0
+  elastic_net:
+    C: 0.1
+    l1_ratio: 0.7
+  random_forest:
+    n_estimators: 300
+    max_depth: 4
+    min_samples_leaf: 100
+    max_features: sqrt
+  xgboost:
+    n_estimators: 700
+    max_depth: 6
+    learning_rate: 0.03
+    subsample: 1.0
+    colsample_bytree: 0.5
+    reg_lambda: 1.0
+    min_child_weight: 10
+  lightgbm:
+    n_estimators: 400
+    num_leaves: 15
+    learning_rate: 0.05
+    colsample_bytree: 0.8
+    reg_lambda: 20.0
+    min_child_samples: 50

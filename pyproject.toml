@@ -23,6 +23,7 @@ dependencies = [
     "pandas-market-calendars>=4.4",
     "pydantic>=2.6",
     "PyYAML>=6.0",
+    "tabulate>=0.9",
     "matplotlib>=3.8",
     "fastapi>=0.110",
     "uvicorn[standard]>=0.29",

@@ -30,6 +30,7 @@ httpx==0.28.1
 # configuration
 pydantic==2.13.5
 PyYAML==6.0.3
+tabulate==0.10.0
 
 # figures for the written report
 matplotlib==3.11.1

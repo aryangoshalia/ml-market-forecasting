@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
@@ -61,15 +62,15 @@ class Panel:
 
     def to_parquet(self, path: Path) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
-        payload = self.frame.copy()
-        payload.attrs = {
+        self.frame.to_parquet(path, engine="pyarrow")
+        metadata = {
             "feature_names": self.feature_names,
             "target_names": self.target_names,
             "feature_version": self.feature_version,
             "horizons": self.horizons,
             "tickers": self.tickers,
         }
-        payload.to_parquet(path, engine="pyarrow")
+        path.with_suffix(".meta.json").write_text(json.dumps(metadata, indent=2), encoding="utf-8")
 
 
 def build_panel(
@@ -163,3 +164,21 @@ def label_coverage(panel: Panel, target: str, horizon: int) -> dict[str, Any]:
         "unlabelled_rows": int(labels.isna().sum()),
         "base_rate": float(valid.mean()) if len(valid) else float("nan"),
     }
+
+
+def load_panel(path: Path) -> Panel:
+    """Read a panel written by :meth:`Panel.to_parquet`, with its sidecar metadata."""
+    frame = pd.read_parquet(path)
+    sidecar = path.with_suffix(".meta.json")
+    if not sidecar.exists():
+        raise FileNotFoundError(f"missing panel metadata: {sidecar}")
+    metadata = json.loads(sidecar.read_text(encoding="utf-8"))
+    return Panel(
+        frame=frame,
+        feature_names=metadata["feature_names"],
+        target_names=metadata["target_names"],
+        registry=FeatureRegistry(),
+        feature_version=metadata["feature_version"],
+        horizons=metadata["horizons"],
+        tickers=metadata["tickers"],
+    )

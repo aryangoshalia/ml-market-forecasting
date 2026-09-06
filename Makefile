@@ -2,7 +2,7 @@ PYTHON := .venv/bin/python
 PIP := .venv/bin/pip
 
 .DEFAULT_GOAL := help
-.PHONY: help setup data panel audit docs test lint format typecheck check clean clean-cache
+.PHONY: help setup data panel audit docs walkforward tune leaderboard results verify test lint format typecheck check clean clean-cache
 
 help:
 	@echo "setup      create .venv and install the pinned dependencies"
@@ -10,6 +10,11 @@ help:
 	@echo "panel      build the pooled feature and target panel"
 	@echo "audit      run the leakage, truncation and scale audits"
 	@echo "docs       regenerate docs/FEATURES.md from the feature registry"
+	@echo "tune       hyperparameter search on the earliest folds only"
+	@echo "walkforward  run walk-forward evaluation and record the results"
+	@echo "leaderboard  compare recorded runs against their baselines"
+	@echo "results    regenerate docs/RESULTS.md from the recorded runs"
+	@echo "verify     quick end-to-end check: fetch, audit, and a short run"
 	@echo "test       run the test suite"
 	@echo "lint       ruff check"
 	@echo "format     ruff format"
@@ -36,6 +41,25 @@ audit:
 
 docs:
 	$(PYTHON) scripts/feature_docs.py
+
+tune:
+	$(PYTHON) scripts/tune_hyperparams.py
+
+walkforward:
+	$(PYTHON) scripts/run_walkforward.py --groups dev --experiment main
+
+leaderboard:
+	$(PYTHON) scripts/leaderboard.py
+
+results:
+	$(PYTHON) scripts/make_results.py
+
+verify:
+	$(PYTHON) scripts/fetch_data.py --groups dev
+	$(PYTHON) scripts/audit_leakage.py --sample 1
+	$(PYTHON) scripts/build_panel.py --groups dev
+	$(PYTHON) scripts/run_walkforward.py --groups dev --targets direction --horizons 1 \
+		--max-folds 3 --experiment verify
 
 test:
 	$(PYTHON) -m pytest tests/ -q

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+from datetime import date
 from pathlib import Path
 
 from market_forecast.config import get_config, project_root
@@ -19,6 +20,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--tickers", nargs="*")
     parser.add_argument("--groups", nargs="*", help="dev, val or test")
     parser.add_argument("--start", help="override the configured start date, e.g. 2010-01-01")
+    parser.add_argument(
+        "--end", help="pin the last session, e.g. 2026-09-04, to reproduce a published run"
+    )
     parser.add_argument("--out", default=None, help="output parquet path")
     parser.add_argument("--log-level", default="INFO")
     return parser.parse_args()
@@ -33,14 +37,11 @@ def main() -> int:
     if not tickers and args.groups:
         tickers = [t for g in args.groups for t in config.universe.groups.get(g, [])]
 
-    start = None
-    if args.start:
-        from datetime import date
-
-        start = date.fromisoformat(args.start)
+    start = date.fromisoformat(args.start) if args.start else None
+    end = date.fromisoformat(args.end) if args.end else None
 
     loader = default_loader(config.data)
-    panel = build_panel(config, loader, tickers=tickers, start=start)
+    panel = build_panel(config, loader, tickers=tickers, start=start, end=end)
 
     logger.info("panel: %s", panel.describe())
     if panel.skipped:
@@ -57,6 +58,7 @@ def main() -> int:
             )
 
     suffix = f"_{args.start}" if args.start else ""
+    suffix += f"_to{args.end}" if args.end else ""
     out = (
         Path(args.out)
         if args.out
