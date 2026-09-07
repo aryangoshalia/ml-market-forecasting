@@ -1,0 +1,58 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --ground: #fbfbfa;
+  --surface: #ffffff;
+  --line: #e2e2df;
+  --ink: #1a1a19;
+  --muted: #6b6b66;
+  --faint: #9a9a94;
+  --accent: #1c5fd6;
+  --up: #17683c;
+  --down: #a8231d;
+  --warn: #8a6410;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ground: #0e0e0d;
+    --surface: #161615;
+    --line: #2a2a28;
+    --ink: #ececea;
+    --muted: #9a9a94;
+    --faint: #6b6b66;
+    --accent: #6f9df5;
+    --up: #4fb37a;
+    --down: #e0655c;
+    --warn: #d0a44a;
+  }
+}
+
+html {
+  color-scheme: light dark;
+}
+
+body {
+  background: var(--ground);
+  color: var(--ink);
+  font-feature-settings: "cv05", "cv08", "ss01";
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Numbers must line up in columns. This is the single most important rule here. */
+.tabular,
+table {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+::selection {
+  background: color-mix(in srgb, var(--accent) 24%, transparent);
+}
+
+*:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
