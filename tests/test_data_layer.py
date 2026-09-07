@@ -216,3 +216,48 @@ class TestCorporateActionAdjustment:
         raw = prices.copy()
         raw["adj_close"] = raw["close"] * 0.7
         assert (adjust_for_corporate_actions(raw)["volume"] == raw["volume"]).all()
+
+
+class TestNonSessionRows:
+    """Vendors publish live quotes on market holidays. The exchange calendar decides."""
+
+    def _frame(self, dates):
+        return pd.DataFrame(
+            {
+                c: np.ones(len(dates))
+                for c in ("open", "high", "low", "close", "adj_close", "volume")
+            },
+            index=pd.DatetimeIndex(dates, name="date"),
+        )
+
+    def test_drops_a_row_dated_on_a_holiday(self):
+        from market_forecast.data.loader import drop_non_sessions
+
+        sessions = trading_sessions(date(2024, 6, 28), date(2024, 7, 8))
+        with_holiday = sessions.append(pd.DatetimeIndex([pd.Timestamp("2024-07-04")])).sort_values()
+        cleaned = drop_non_sessions(self._frame(with_holiday), "^VIX")
+
+        assert pd.Timestamp("2024-07-04") not in cleaned.index
+        assert len(cleaned) == len(sessions)
+
+    def test_leaves_a_clean_series_untouched(self):
+        from market_forecast.data.loader import drop_non_sessions
+
+        sessions = trading_sessions(date(2024, 3, 1), date(2024, 3, 28))
+        frame = self._frame(sessions)
+        pd.testing.assert_frame_equal(drop_non_sessions(frame, "AAPL"), frame)
+
+    def test_a_holiday_row_would_otherwise_move_the_latest_session(self):
+        from market_forecast.data.loader import drop_non_sessions
+
+        sessions = trading_sessions(date(2024, 6, 28), date(2024, 7, 3))
+        with_holiday = sessions.append(pd.DatetimeIndex([pd.Timestamp("2024-07-04")])).sort_values()
+        frame = self._frame(with_holiday)
+
+        assert frame.index[-1] == pd.Timestamp("2024-07-04")
+        assert drop_non_sessions(frame, "^VIX").index[-1] == pd.Timestamp("2024-07-03")
+
+    def test_handles_an_empty_frame(self):
+        from market_forecast.data.loader import drop_non_sessions
+
+        assert drop_non_sessions(pd.DataFrame(), "AAPL").empty

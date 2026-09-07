@@ -17,6 +17,7 @@ from market_forecast.data.base import (
 )
 from market_forecast.data.cache import ParquetCache
 from market_forecast.data.providers import build_provider
+from market_forecast.data.sessions import unexpected_sessions
 from market_forecast.data.validate import ValidationReport, validate_ohlcv
 from market_forecast.logging import get_logger
 
@@ -39,6 +40,28 @@ class LoadResult:
     @property
     def last_session(self) -> pd.Timestamp | None:
         return self.frame.index[-1] if len(self.frame) else None
+
+
+def drop_non_sessions(frame: pd.DataFrame, ticker: str, calendar: str = "XNYS") -> pd.DataFrame:
+    """Remove rows dated on days the exchange was closed.
+
+    Vendors sometimes publish a live quote on a holiday. Index symbols are the usual
+    offender because they are computed rather than traded. The exchange calendar decides
+    what counts as a session, so those rows are dropped rather than carried forward as a
+    phantom bar that would shift the latest-session date and every trailing window.
+    """
+    if frame.empty:
+        return frame
+    stray = unexpected_sessions(pd.DatetimeIndex(frame.index), calendar)
+    if len(stray) == 0:
+        return frame
+    logger.warning(
+        "%s: dropping %d rows dated outside exchange sessions (%s)",
+        ticker,
+        len(stray),
+        ", ".join(d.strftime("%Y-%m-%d") for d in stray[:3]),
+    )
+    return frame.drop(index=stray)
 
 
 def adjust_for_corporate_actions(frame: pd.DataFrame) -> pd.DataFrame:
@@ -93,6 +116,7 @@ class MarketDataLoader:
             self._refresh(symbol, window_start, window_end, force_refresh)
 
         frame = self.cache.read(symbol)
+        frame = drop_non_sessions(frame, symbol, self.config.exchange_calendar)
         if window_start:
             frame = frame.loc[pd.Timestamp(window_start) :]
         if window_end:
