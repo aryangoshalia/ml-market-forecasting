@@ -2,7 +2,7 @@ PYTHON := .venv/bin/python
 PIP := .venv/bin/pip
 
 .DEFAULT_GOAL := help
-.PHONY: help setup data panel audit docs walkforward tune leaderboard results verify test lint format typecheck check clean clean-cache
+.PHONY: help setup data panel audit docs walkforward tune leaderboard results demo-data analysis verify test lint format typecheck check clean clean-cache
 
 help:
 	@echo "setup      create .venv and install the pinned dependencies"
@@ -14,6 +14,8 @@ help:
 	@echo "walkforward  run walk-forward evaluation and record the results"
 	@echo "leaderboard  compare recorded runs against their baselines"
 	@echo "results    regenerate docs/RESULTS.md from the recorded runs"
+	@echo "demo-data  rebuild the compact artefacts shipped with the repo"
+	@echo "analysis   regenerate docs/ANALYSIS.md (regimes, SHAP, errors, friction)"
 	@echo "verify     quick end-to-end check: fetch, audit, and a short run"
 	@echo "test       run the test suite"
 	@echo "lint       ruff check"
@@ -53,6 +55,12 @@ leaderboard:
 
 results:
 	$(PYTHON) scripts/make_results.py
+
+demo-data:
+	$(PYTHON) scripts/build_demo_data.py
+
+analysis:
+	$(PYTHON) scripts/make_analysis.py
 
 verify:
 	$(PYTHON) scripts/fetch_data.py --groups dev

@@ -1,0 +1,101 @@
+{
+  "experiment": "main",
+  "predictions": [
+    {
+      "file": "predictions_direction_h1.parquet",
+      "target": "direction",
+      "horizon": 1,
+      "run_id": "20260907-011426-main-direction-h1-6d392dc1ad3d",
+      "rows": 584640,
+      "models": [
+        "always_long",
+        "elastic_net",
+        "lightgbm",
+        "logistic",
+        "majority",
+        "persistence",
+        "random_forest",
+        "xgboost"
+      ],
+      "folds": 29,
+      "first_session": "2012-01-05",
+      "last_session": "2026-07-20",
+      "size_bytes": 238688
+    },
+    {
+      "file": "predictions_direction_h5.parquet",
+      "target": "direction",
+      "horizon": 5,
+      "run_id": "20260907-013254-main-direction-h5-c0f95f7decb8",
+      "rows": 584640,
+      "models": [
+        "always_long",
+        "elastic_net",
+        "lightgbm",
+        "logistic",
+        "majority",
+        "persistence",
+        "random_forest",
+        "xgboost"
+      ],
+      "folds": 29,
+      "first_session": "2012-01-05",
+      "last_session": "2026-07-20",
+      "size_bytes": 242562
+    },
+    {
+      "file": "predictions_excess_direction_h1.parquet",
+      "target": "excess_direction",
+      "horizon": 1,
+      "run_id": "20260907-015130-main-excess_direction-h1-82936c93deac",
+      "rows": 584640,
+      "models": [
+        "always_long",
+        "elastic_net",
+        "lightgbm",
+        "logistic",
+        "majority",
+        "persistence",
+        "random_forest",
+        "xgboost"
+      ],
+      "folds": 29,
+      "first_session": "2012-01-05",
+      "last_session": "2026-07-20",
+      "size_bytes": 267400
+    },
+    {
+      "file": "predictions_excess_direction_h5.parquet",
+      "target": "excess_direction",
+      "horizon": 5,
+      "run_id": "20260907-021107-main-excess_direction-h5-f066e1bcce2f",
+      "rows": 584640,
+      "models": [
+        "always_long",
+        "elastic_net",
+        "lightgbm",
+        "logistic",
+        "majority",
+        "persistence",
+        "random_forest",
+        "xgboost"
+      ],
+      "folds": 29,
+      "first_session": "2012-01-05",
+      "last_session": "2026-07-20",
+      "size_bytes": 256439
+    }
+  ],
+  "regimes": {
+    "model": "hmm",
+    "n_states": 3,
+    "inference": "filtered",
+    "sessions": 3654,
+    "names": {
+      "0": "low volatility / positive trend",
+      "1": "high volatility / positive trend",
+      "2": "high volatility / sideways"
+    },
+    "episodes": 167
+  }
+}
