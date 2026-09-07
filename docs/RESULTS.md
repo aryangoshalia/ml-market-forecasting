@@ -14,6 +14,12 @@ Do not edit by hand.
 Every number below is out of sample. Preprocessing, calibration, decision thresholds
 and hyperparameters were fitted strictly inside each fold's training window.
 
+The three comparison runs at the end predate a fix to the calibrator, which used to
+return probabilities of exactly zero or one for a pure isotonic bin. Their Brier and
+calibration error columns therefore come from the earlier code. Ranking metrics are
+unaffected, because the fix clips monotonically and cannot reorder predictions, so
+every AUC-based conclusion below stands as reported.
+
 ## Reading the tables
 
 - `accuracy_over_base_rate` compares against the best constant predictor chosen with
@@ -39,11 +45,11 @@ Base rate 0.5197. A model predicting the majority class every day scores that ac
 | always_long   |     0.5174 |                   -0.0104 |    0.5    |   0.5245 |  0.2497 | 0.0221 |      0.5    |      0.5    | 0/29        |  1      |  1      |
 | majority      |     0.5174 |                   -0.0104 |    0.5    |   0.5245 |  0.2497 | 0.0221 |      0.5    |      0.5    | 0/29        |  1      |  1      |
 
-Permutation null for the best learner (`random_forest`), pooled over 73,080 predictions, labels shuffled in blocks by date so the cross-sectional structure is preserved:
+Permutation null for the best learner (`random_forest`), pooled over 73,080 predictions. Whole sessions are permuted within each fold, so fold base rates and same-day cross-sectional structure both survive into the null and only the link between a prediction and its own outcome is broken:
 
 - observed AUC 0.5047
-- null 0.4995 +/- 0.0045, 95th percentile 0.5068
-- p = 0.1125 (inside the null distribution)
+- null 0.4993 +/- 0.0030, 95th percentile 0.5040
+- p = 0.0267 (above the null)
 
 ## `direction` at 5 sessions
 
@@ -60,11 +66,11 @@ Base rate 0.5539. A model predicting the majority class every day scores that ac
 | always_long   |     0.5566 |                   -0.0084 |    0.5    |   0.5625 |  0.247  | 0.0411 |      0.5    |      0.5    | 0/29        |  1      |  1      |
 | majority      |     0.5566 |                   -0.0084 |    0.5    |   0.5625 |  0.247  | 0.0411 |      0.5    |      0.5    | 0/29        |  1      |  1      |
 
-Permutation null for the best learner (`xgboost`), pooled over 73,080 predictions, labels shuffled in blocks by date so the cross-sectional structure is preserved:
+Permutation null for the best learner (`xgboost`), pooled over 73,080 predictions. Whole sessions are permuted within each fold, so fold base rates and same-day cross-sectional structure both survive into the null and only the link between a prediction and its own outcome is broken:
 
 - observed AUC 0.5027
-- null 0.4998 +/- 0.0044, 95th percentile 0.5070
-- p = 0.2575 (inside the null distribution)
+- null 0.4945 +/- 0.0028, 95th percentile 0.4992
+- p = 0.0000 (above the null)
 
 ## `excess_direction` at 1 session
 
@@ -81,10 +87,10 @@ Base rate 0.4962. A model predicting the majority class every day scores that ac
 | always_long   |     0.5049 |                   -0.0065 |    0.5    |   0.4974 |  0.25   | 0.0124 |      0.5    |      0.5    | 0/29        |  1      |  1      |
 | majority      |     0.5049 |                   -0.0065 |    0.5    |   0.4974 |  0.25   | 0.0124 |      0.5    |      0.5    | 0/29        |  1      |  1      |
 
-Permutation null for the best learner (`random_forest`), pooled over 73,080 predictions, labels shuffled in blocks by date so the cross-sectional structure is preserved:
+Permutation null for the best learner (`random_forest`), pooled over 73,080 predictions. Whole sessions are permuted within each fold, so fold base rates and same-day cross-sectional structure both survive into the null and only the link between a prediction and its own outcome is broken:
 
 - observed AUC 0.5106
-- null 0.4998 +/- 0.0023, 95th percentile 0.5033
+- null 0.5028 +/- 0.0017, 95th percentile 0.5055
 - p = 0.0000 (above the null)
 
 ## `excess_direction` at 5 sessions
@@ -93,7 +99,7 @@ Base rate 0.5070. A model predicting the majority class every day scores that ac
 
 | model         |   accuracy |   accuracy_over_base_rate |   roc_auc |   pr_auc |   brier |    ece |   auc_95_lo |   auc_95_hi | folds_won   |   p_raw |   p_adj |
 |:--------------|-----------:|--------------------------:|----------:|---------:|--------:|-------:|------------:|------------:|:------------|--------:|--------:|
-| random_forest |     0.5052 |                   -0.0144 |    0.5056 |   0.5114 |  0.2521 | 0.0357 |      0.5009 |      0.5085 | 19/29       |  0.1433 |  0.8094 |
+| random_forest |     0.5052 |                   -0.0144 |    0.5056 |   0.5114 |  0.2521 | 0.0356 |      0.5009 |      0.5085 | 19/29       |  0.1433 |  0.8094 |
 | elastic_net   |     0.5058 |                   -0.0138 |    0.5037 |   0.5108 |  0.2571 | 0.0471 |      0.5013 |      0.5086 | 15/29       |  0.3042 |  0.8094 |
 | logistic      |     0.5075 |                   -0.0121 |    0.5024 |   0.5103 |  0.255  | 0.044  |      0.4998 |      0.5069 | 13/29       |  0.4047 |  0.8094 |
 | persistence   |     0.5105 |                   -0.0091 |    0.5016 |   0.5082 |  0.2503 | 0.0231 |      0.4991 |      0.5039 | 10/29       |  0.2454 |  0.8094 |
@@ -102,11 +108,11 @@ Base rate 0.5070. A model predicting the majority class every day scores that ac
 | majority      |     0.5102 |                   -0.0094 |    0.5    |   0.5073 |  0.2503 | 0.0233 |      0.5    |      0.5    | 0/29        |  1      |  1      |
 | xgboost       |     0.5058 |                   -0.0138 |    0.5    |   0.5085 |  0.2522 | 0.0329 |      0.4929 |      0.5078 | 12/29       |  0.7172 |  1      |
 
-Permutation null for the best learner (`random_forest`), pooled over 73,080 predictions, labels shuffled in blocks by date so the cross-sectional structure is preserved:
+Permutation null for the best learner (`random_forest`), pooled over 73,080 predictions. Whole sessions are permuted within each fold, so fold base rates and same-day cross-sectional structure both survive into the null and only the link between a prediction and its own outcome is broken:
 
 - observed AUC 0.5051
-- null 0.5006 +/- 0.0021, 95th percentile 0.5040
-- p = 0.0175 (above the null)
+- null 0.5005 +/- 0.0015, 95th percentile 0.5032
+- p = 0.0000 (above the null)
 
 ## Configuration comparisons
 
