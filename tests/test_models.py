@@ -254,3 +254,39 @@ class TestThresholdSelection:
         assert roc_auc_score(target, adjusted) == pytest.approx(
             roc_auc_score(target, calibrator._model.predict(probabilities)), abs=1e-9
         )
+
+    def test_f1_degenerates_on_a_weak_classifier(self):
+        """Negative control for the default: F1 collapses to always predicting positive."""
+        rng = np.random.default_rng(21)
+        n = 20000
+        target = (rng.uniform(size=n) < 0.5).astype("float64")
+        # ranking barely better than chance, which is the regime this project operates in
+        probabilities = np.clip(0.5 + 0.01 * (target - 0.5) + rng.normal(0, 0.05, n), 0.01, 0.99)
+
+        by_f1 = select_threshold(target, probabilities, "f1")
+        by_balanced = select_threshold(target, probabilities, "balanced_accuracy")
+
+        assert (probabilities >= by_f1.threshold).mean() > 0.95
+        assert 0.2 < (probabilities >= by_balanced.threshold).mean() < 0.8
+
+    def test_the_default_metric_is_balanced_accuracy(self):
+        rng = np.random.default_rng(22)
+        target = (rng.uniform(size=5000) < 0.5).astype("float64")
+        probabilities = rng.uniform(0.3, 0.7, 5000)
+        assert select_threshold(target, probabilities).metric == "balanced_accuracy"
+
+    def test_a_constant_predictor_gets_the_neutral_threshold(self):
+        """Baselines tie at every threshold, so searching would return an arbitrary edge."""
+        rng = np.random.default_rng(23)
+        target = (rng.uniform(size=2000) < 0.52).astype("float64")
+        for constant in (0.52, 1.0 - 1e-6, 0.0):
+            choice = select_threshold(target, np.full(2000, constant))
+            assert choice.threshold == 0.5
+
+    def test_a_varying_predictor_still_gets_a_searched_threshold(self):
+        rng = np.random.default_rng(24)
+        n = 5000
+        target = (rng.uniform(size=n) < 0.5).astype("float64")
+        probabilities = np.clip(0.5 + 0.05 * (target - 0.5) + rng.normal(0, 0.05, n), 0.01, 0.99)
+        choice = select_threshold(target, probabilities)
+        assert 0.2 < choice.threshold < 0.8
