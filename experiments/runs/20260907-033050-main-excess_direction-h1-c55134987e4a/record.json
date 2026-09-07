@@ -1,8 +1,8 @@
 {
-  "run_id": "20260907-015130-main-excess_direction-h1-82936c93deac",
-  "created_at": "2026-09-07T01:51:30.742968",
+  "run_id": "20260907-033050-main-excess_direction-h1-c55134987e4a",
+  "created_at": "2026-09-07T03:30:50.769701",
   "experiment": "main",
-  "config_hash": "{'target': 'excess_direction', 'horizon': 1, 'models': ['majority', 'always_long', 'persistence', 'logistic', 'elastic_net(C=0.1,l1_ratio=0.5)', 'random_forest', 'xgboost', 'lightgbm'], 'calibration': 'isotonic', 'threshold_metric': 'f1', 'groups': ['dev'], 'start': None, 'max_folds': None, 'seed': 17, 'scheme': 'anchored', 'walkforward': {'scheme': 'anchored', 'rolling_train_sessions': 1260, 'initial_train_sessions': 1512, 'test_sessions': 126, 'step_sessions': 126, 'purge_sessions': None, 'embargo_sessions': 5, 'inner_validation_sessions': 120, 'seed': 17}, 'feature_version': 'v1'}",
+  "config_hash": "{'target': 'excess_direction', 'horizon': 1, 'models': ['majority', 'always_long', 'persistence', 'logistic', 'elastic_net(C=0.1,l1_ratio=0.5)', 'random_forest', 'xgboost', 'lightgbm'], 'calibration': 'isotonic', 'threshold_metric': 'balanced_accuracy', 'groups': ['dev'], 'start': None, 'max_folds': None, 'seed': 17, 'scheme': 'anchored', 'walkforward': {'scheme': 'anchored', 'rolling_train_sessions': 1260, 'initial_train_sessions': 1512, 'test_sessions': 126, 'step_sessions': 126, 'purge_sessions': None, 'embargo_sessions': 5, 'inner_validation_sessions': 120, 'seed': 17}, 'feature_version': 'v1'}",
   "seed": 17,
   "target": "excess_direction",
   "horizon": 1,
@@ -75,10 +75,10 @@
       "accuracy_over_base_rate_se": 0.002141677693925922,
       "roc_auc_se": 0.0020945214466987446,
       "pr_auc_se": 0.002692253201110575,
-      "brier_se": 0.00019182877425438574,
-      "ece_se": 0.0021739030050369826,
+      "brier_se": 0.00019182877425438682,
+      "ece_se": 0.0021739030050369813,
       "f1_se": 0.04222834482471009,
-      "log_loss_se": 0.0014775527864691323,
+      "log_loss_se": 0.001477552786469134,
       "auc_ci_low": 0.5049961391025792,
       "auc_ci_high": 0.5120923227636244,
       "vs_majority_p": 0.000368364155292511,
@@ -272,7 +272,7 @@
       "shap": "0.49.1",
       "hmmlearn": "0.3.3"
     },
-    "commit": "b2cea56e04457f00449ecbb83d8dca12822d040b",
+    "commit": "4b49be5084fcebcf2727fd37b35f67d88d1a7773",
     "dirty": "true"
   },
   "notes": ""

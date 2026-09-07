@@ -1,6 +1,6 @@
 {
   "target": "excess_direction",
-  "horizon": 1,
+  "horizon": 5,
   "models": [
     "majority",
     "always_long",
@@ -12,7 +12,7 @@
     "lightgbm"
   ],
   "calibration": "isotonic",
-  "threshold_metric": "f1",
+  "threshold_metric": "balanced_accuracy",
   "groups": [
     "dev"
   ],
