@@ -48,8 +48,8 @@ Base rate 0.5197. A model predicting the majority class every day scores that ac
 Permutation null for the best learner (`random_forest`), pooled over 73,080 predictions. Whole sessions are permuted within each fold, so fold base rates and same-day cross-sectional structure both survive into the null and only the link between a prediction and its own outcome is broken:
 
 - observed AUC 0.5047
-- null 0.4993 +/- 0.0030, 95th percentile 0.5040
-- p = 0.0267 (above the null)
+- null 0.4992 +/- 0.0031, 95th percentile 0.5040
+- p = 0.0240 (above the null)
 
 ## `direction` at 5 sessions
 
@@ -69,7 +69,7 @@ Base rate 0.5539. A model predicting the majority class every day scores that ac
 Permutation null for the best learner (`xgboost`), pooled over 73,080 predictions. Whole sessions are permuted within each fold, so fold base rates and same-day cross-sectional structure both survive into the null and only the link between a prediction and its own outcome is broken:
 
 - observed AUC 0.5027
-- null 0.4945 +/- 0.0028, 95th percentile 0.4992
+- null 0.4945 +/- 0.0028, 95th percentile 0.4991
 - p = 0.0000 (above the null)
 
 ## `excess_direction` at 1 session
@@ -90,7 +90,7 @@ Base rate 0.4962. A model predicting the majority class every day scores that ac
 Permutation null for the best learner (`random_forest`), pooled over 73,080 predictions. Whole sessions are permuted within each fold, so fold base rates and same-day cross-sectional structure both survive into the null and only the link between a prediction and its own outcome is broken:
 
 - observed AUC 0.5106
-- null 0.5028 +/- 0.0017, 95th percentile 0.5055
+- null 0.5028 +/- 0.0017, 95th percentile 0.5056
 - p = 0.0000 (above the null)
 
 ## `excess_direction` at 5 sessions
@@ -111,8 +111,21 @@ Base rate 0.5070. A model predicting the majority class every day scores that ac
 Permutation null for the best learner (`random_forest`), pooled over 73,080 predictions. Whole sessions are permuted within each fold, so fold base rates and same-day cross-sectional structure both survive into the null and only the link between a prediction and its own outcome is broken:
 
 - observed AUC 0.5051
-- null 0.5005 +/- 0.0015, 95th percentile 0.5032
+- null 0.5005 +/- 0.0016, 95th percentile 0.5032
 - p = 0.0000 (above the null)
+
+## Unseen assets
+
+Trained on the development group and scored on tickers held out from the start.
+Both sides cover the same test windows, so the comparison isolates the effect of
+scoring assets the model never saw.
+
+| formulation          | best on unseen   |   seen AUC |   unseen AUC |   change |   unseen base rate |   unseen tickers |
+|:---------------------|:-----------------|-----------:|-------------:|---------:|-------------------:|-----------------:|
+| direction h=1        | random_forest    |     0.5119 |       0.5099 |  -0.002  |             0.5164 |               22 |
+| direction h=5        | xgboost          |     0.5084 |       0.5061 |  -0.0023 |             0.5449 |               22 |
+| excess_direction h=1 | elastic_net      |     0.5068 |       0.5067 |  -0.0002 |             0.4946 |               22 |
+| excess_direction h=5 | elastic_net      |     0.5037 |       0.5027 |  -0.0009 |             0.5011 |               22 |
 
 ## Configuration comparisons
 
@@ -120,31 +133,31 @@ Permutation null for the best learner (`random_forest`), pooled over 73,080 pred
 
 About 80 configurations searched across 5 models, on validation windows lying entirely before the first test fold.
 
-|   index | formulation          |   baseline mean AUC |   variant mean AUC |   mean delta | learners improved   |
-|--------:|:---------------------|--------------------:|-------------------:|-------------:|:--------------------|
-|       0 | direction h=1        |              0.507  |             0.5064 |      -0.0006 | 2/5                 |
-|       1 | direction h=5        |              0.5056 |             0.5047 |      -0.0009 | 1/5                 |
-|       2 | excess_direction h=1 |              0.5069 |             0.5064 |      -0.0006 | 2/5                 |
-|       3 | excess_direction h=5 |              0.5026 |             0.5033 |       0.0007 | 2/5                 |
+| formulation          |   baseline mean AUC |   variant mean AUC |   mean delta | learners improved   |
+|:---------------------|--------------------:|-------------------:|-------------:|:--------------------|
+| direction h=1        |              0.507  |             0.5064 |      -0.0006 | 2/5                 |
+| direction h=5        |              0.5056 |             0.5047 |      -0.0009 | 1/5                 |
+| excess_direction h=1 |              0.5069 |             0.5064 |      -0.0006 | 2/5                 |
+| excess_direction h=5 |              0.5026 |             0.5033 |       0.0007 | 2/5                 |
 
 ### 2010 start versus 2005 start
 
 Fewer folds, so intervals are wider. Compared on shared test sessions elsewhere.
 
-|   index | formulation          |   baseline mean AUC |   variant mean AUC |   mean delta | learners improved   |
-|--------:|:---------------------|--------------------:|-------------------:|-------------:|:--------------------|
-|       0 | direction h=1        |              0.507  |             0.509  |       0.002  | 2/5                 |
-|       1 | direction h=5        |              0.5056 |             0.5122 |       0.0065 | 5/5                 |
-|       2 | excess_direction h=1 |              0.5069 |             0.5066 |      -0.0003 | 3/5                 |
-|       3 | excess_direction h=5 |              0.5026 |             0.5038 |       0.0013 | 3/5                 |
+| formulation          |   baseline mean AUC |   variant mean AUC |   mean delta | learners improved   |
+|:---------------------|--------------------:|-------------------:|-------------:|:--------------------|
+| direction h=1        |              0.507  |             0.509  |       0.002  | 2/5                 |
+| direction h=5        |              0.5056 |             0.5122 |       0.0065 | 5/5                 |
+| excess_direction h=1 |              0.5069 |             0.5066 |      -0.0003 | 3/5                 |
+| excess_direction h=5 |              0.5026 |             0.5038 |       0.0013 | 3/5                 |
 
 ### Rolling versus anchored windows
 
 A fixed 1260-session training window instead of an expanding one.
 
-|   index | formulation          |   baseline mean AUC |   variant mean AUC |   mean delta | learners improved   |
-|--------:|:---------------------|--------------------:|-------------------:|-------------:|:--------------------|
-|       0 | direction h=1        |              0.507  |             0.5043 |      -0.0027 | 1/5                 |
-|       1 | direction h=5        |              0.5056 |             0.5112 |       0.0056 | 5/5                 |
-|       2 | excess_direction h=1 |              0.5069 |             0.5058 |      -0.0012 | 1/5                 |
-|       3 | excess_direction h=5 |              0.5026 |             0.5015 |      -0.0011 | 1/5                 |
+| formulation          |   baseline mean AUC |   variant mean AUC |   mean delta | learners improved   |
+|:---------------------|--------------------:|-------------------:|-------------:|:--------------------|
+| direction h=1        |              0.507  |             0.5043 |      -0.0027 | 1/5                 |
+| direction h=5        |              0.5056 |             0.5112 |       0.0056 | 5/5                 |
+| excess_direction h=1 |              0.5069 |             0.5058 |      -0.0012 | 1/5                 |
+| excess_direction h=5 |              0.5026 |             0.5015 |      -0.0011 | 1/5                 |

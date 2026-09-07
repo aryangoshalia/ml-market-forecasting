@@ -38,7 +38,9 @@ logger = get_logger(__name__)
 
 
 def md(frame: pd.DataFrame, index: bool = True) -> str:
-    return frame.reset_index().to_markdown(index=False) if index else frame.to_markdown(index=False)
+    """Render a table, keeping a named index as its first column and dropping an unnamed one."""
+    prepared = frame.reset_index() if index and frame.index.name else frame
+    return prepared.to_markdown(index=False)
 
 
 def parse_args() -> argparse.Namespace:

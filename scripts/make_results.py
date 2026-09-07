@@ -57,7 +57,9 @@ def fold_table(tracker: ExperimentTracker, run_id: str) -> pd.DataFrame:
 
 
 def markdown(frame: pd.DataFrame) -> str:
-    return frame.reset_index().to_markdown(index=False)
+    """Render a table, keeping a named index as its first column and dropping an unnamed one."""
+    prepared = frame.reset_index() if frame.index.name else frame
+    return prepared.to_markdown(index=False)
 
 
 def main() -> int:
@@ -151,6 +153,41 @@ def main() -> int:
             f"- p = {null.p_value:.4f} ({verdict})",
             "",
         ]
+
+    held = index[index["experiment"] == "heldout"]
+    if not held.empty:
+        lines += [
+            "## Unseen assets",
+            "",
+            "Trained on the development group and scored on tickers held out from the start.",
+            "Both sides cover the same test windows, so the comparison isolates the effect of",
+            "scoring assets the model never saw.",
+            "",
+        ]
+        rows = []
+        for target, horizon in FORMULATIONS:
+            base = main_runs[(main_runs["target"] == target) & (main_runs["horizon"] == horizon)]
+            other = held[(held["target"] == target) & (held["horizon"] == horizon)]
+            if base.empty or other.empty:
+                continue
+            seen = aggregate(tracker.load_fold_metrics(base.iloc[-1]["run_id"]))
+            unseen = aggregate(tracker.load_fold_metrics(other.iloc[-1]["run_id"]))
+            learners = [m for m in MODELS if m != "persistence" and m in unseen.index]
+            best = max(learners, key=lambda m: unseen.loc[m, "roc_auc"])
+            rows.append(
+                {
+                    "formulation": f"{target} h={horizon}",
+                    "best on unseen": best,
+                    "seen AUC": round(float(seen.loc[best, "roc_auc"]), 4),
+                    "unseen AUC": round(float(unseen.loc[best, "roc_auc"]), 4),
+                    "change": round(
+                        float(unseen.loc[best, "roc_auc"] - seen.loc[best, "roc_auc"]), 4
+                    ),
+                    "unseen base rate": round(float(other.iloc[-1]["dataset"]["base_rate"]), 4),
+                    "unseen tickers": len(other.iloc[-1]["dataset"]["tickers"]),
+                }
+            )
+        lines += [markdown(pd.DataFrame(rows)), ""]
 
     lines += ["## Configuration comparisons", ""]
     for label, experiment, note in [

@@ -1,0 +1,39 @@
+{
+  "target": "direction",
+  "horizon": 5,
+  "models": [
+    "majority",
+    "always_long",
+    "persistence",
+    "logistic",
+    "elastic_net(C=0.1,l1_ratio=0.5)",
+    "random_forest",
+    "xgboost",
+    "lightgbm"
+  ],
+  "calibration": "isotonic",
+  "threshold_metric": "balanced_accuracy",
+  "groups": [
+    "dev"
+  ],
+  "eval_groups": [
+    "test",
+    "val"
+  ],
+  "start": null,
+  "max_folds": null,
+  "seed": 17,
+  "scheme": "anchored",
+  "walkforward": {
+    "scheme": "anchored",
+    "rolling_train_sessions": 1260,
+    "initial_train_sessions": 1512,
+    "test_sessions": 126,
+    "step_sessions": 126,
+    "purge_sessions": null,
+    "embargo_sessions": 5,
+    "inner_validation_sessions": 120,
+    "seed": 17
+  },
+  "feature_version": "v1"
+}
