@@ -107,3 +107,47 @@ class TestMultipleComparisons:
         adjusted = benjamini_hochberg(np.array([0.01, np.nan, 0.5]))
         assert np.isnan(adjusted[1])
         assert np.isfinite(adjusted[[0, 2]]).all()
+
+
+class TestPooledPermutationNull:
+    """A predictor that only tracks its own fold's base rate must not look skilful."""
+
+    @pytest.fixture
+    def pooled(self):
+        rng = np.random.default_rng(11)
+        folds, dates, y, base = [], [], [], []
+        for fold in range(20):
+            rate = 0.45 + 0.01 * fold  # base rate drifts across folds
+            for day in range(60):
+                labels = (rng.uniform(size=10) < rate).astype("float64")
+                y.extend(labels)
+                folds.extend([fold] * 10)
+                dates.extend([fold * 60 + day] * 10)
+                base.extend([rate] * 10)
+        return (np.array(y), np.array(base), np.array(dates), np.array(folds))
+
+    def test_naive_null_is_fooled_by_base_rate_drift(self, pooled):
+        from market_forecast.evaluation.stats import permutation_null_auc
+
+        y, base, _, _ = pooled
+        result = permutation_null_auc(y, base, draws=200, seed=1)
+        # the constant-per-fold predictor scores above 0.5 purely from drift
+        assert result.observed > 0.52
+        assert result.p_value < 0.05
+
+    def test_pooled_null_is_not_fooled(self, pooled):
+        from market_forecast.evaluation.stats import permutation_null_pooled
+
+        y, base, dates, folds = pooled
+        result = permutation_null_pooled(y, base, dates, folds, draws=200, seed=1)
+        assert result.p_value > 0.05, "base-rate drift alone should not read as skill"
+
+    def test_pooled_null_still_detects_real_signal(self, pooled):
+        from market_forecast.evaluation.stats import permutation_null_pooled
+
+        y, base, dates, folds = pooled
+        rng = np.random.default_rng(3)
+        informative = base + 0.20 * (y - 0.5) + rng.normal(0, 0.02, len(y))
+        result = permutation_null_pooled(y, informative, dates, folds, draws=200, seed=1)
+        assert result.p_value < 0.01
+        assert result.observed > result.quantile_95

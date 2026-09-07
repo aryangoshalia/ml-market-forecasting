@@ -11,7 +11,7 @@ from market_forecast.evaluation.stats import (
     benjamini_hochberg,
     block_bootstrap_ci,
     paired_fold_test,
-    permutation_null_auc,
+    permutation_null_pooled,
 )
 from market_forecast.experiments.runner import aggregate
 from market_forecast.experiments.tracker import ExperimentTracker
@@ -96,10 +96,12 @@ def main() -> int:
 
         best = table[~table["is_baseline"]]["roc_auc"].idxmax()
         pooled = predictions[predictions["model"] == best]
-        null = permutation_null_auc(
-            pooled["y_true"].to_numpy(),
-            pooled["prob"].to_numpy(),
-            blocks=pooled.index.get_level_values("date").to_numpy(),
+        flat = pooled.reset_index()
+        null = permutation_null_pooled(
+            flat["y_true"].to_numpy(),
+            flat["prob"].to_numpy(),
+            dates=flat["date"].to_numpy(),
+            folds=flat["fold"].to_numpy(),
             draws=args.permutation_draws,
             seed=3,
         )

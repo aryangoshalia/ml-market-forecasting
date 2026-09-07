@@ -13,7 +13,7 @@ from market_forecast.evaluation.stats import (
     benjamini_hochberg,
     block_bootstrap_ci,
     paired_fold_test,
-    permutation_null_auc,
+    permutation_null_pooled,
 )
 from market_forecast.experiments.runner import aggregate
 from market_forecast.experiments.tracker import ExperimentTracker
@@ -93,6 +93,12 @@ def main() -> int:
         "Every number below is out of sample. Preprocessing, calibration, decision thresholds",
         "and hyperparameters were fitted strictly inside each fold's training window.",
         "",
+        "The three comparison runs at the end predate a fix to the calibrator, which used to",
+        "return probabilities of exactly zero or one for a pure isotonic bin. Their Brier and",
+        "calibration error columns therefore come from the earlier code. Ranking metrics are",
+        "unaffected, because the fix clips monotonically and cannot reorder predictions, so",
+        "every AUC-based conclusion below stands as reported.",
+        "",
         "## Reading the tables",
         "",
         "- `accuracy_over_base_rate` compares against the best constant predictor chosen with",
@@ -115,10 +121,12 @@ def main() -> int:
             "roc_auc"
         ].idxmax()
         pooled = predictions[predictions["model"] == best]
-        null = permutation_null_auc(
-            pooled["y_true"].to_numpy(),
-            pooled["prob"].to_numpy(),
-            blocks=pooled.index.get_level_values("date").to_numpy(),
+        flat = pooled.reset_index()
+        null = permutation_null_pooled(
+            flat["y_true"].to_numpy(),
+            flat["prob"].to_numpy(),
+            dates=flat["date"].to_numpy(),
+            folds=flat["fold"].to_numpy(),
             draws=args.permutation_draws,
             seed=3,
         )
@@ -134,8 +142,9 @@ def main() -> int:
             markdown(table),
             "",
             f"Permutation null for the best learner (`{best}`), pooled over "
-            f"{len(pooled):,} predictions, labels shuffled in blocks by date so the "
-            "cross-sectional structure is preserved:",
+            f"{len(pooled):,} predictions. Whole sessions are permuted within each fold, "
+            "so fold base rates and same-day cross-sectional structure both survive into "
+            "the null and only the link between a prediction and its own outcome is broken:",
             "",
             f"- observed AUC {null.observed:.4f}",
             f"- null {null.mean:.4f} +/- {null.std:.4f}, 95th percentile {null.quantile_95:.4f}",

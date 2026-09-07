@@ -110,15 +110,20 @@ def permutation_null_auc(
     target: np.ndarray,
     probabilities: np.ndarray,
     blocks: np.ndarray | None = None,
+    strata: np.ndarray | None = None,
     draws: int = 500,
     seed: int = 0,
 ) -> PermutationNull:
     """Distribution of AUC under the null that predictions carry no information.
 
     Answers the question an AUC of 0.52 actually raises: given this sample size and this
-    dependence structure, how large would AUC be by chance alone? Labels are permuted
-    within blocks when supplied, so the permutation preserves cross-sectional structure
-    rather than destroying it and understating the null.
+    dependence structure, how large would AUC be by chance alone?
+
+    ``strata`` matters when predictions from several folds are pooled. A model that only
+    ever predicts its own fold's base rate is constant within a fold, yet scores above
+    0.5 on the pooled set whenever training and test base rates move together, which they
+    do here. Permuting labels inside each stratum keeps that structure in the null, so the
+    test measures skill rather than base-rate drift.
     """
     y = np.asarray(target, dtype="float64")
     p = np.asarray(probabilities, dtype="float64")
@@ -132,6 +137,12 @@ def permutation_null_auc(
     observed = float(roc_auc_score(y, p))
     rng = np.random.default_rng(seed)
 
+    if strata is not None:
+        stratum_ids = np.asarray(strata)[usable]
+        within = [np.flatnonzero(stratum_ids == s) for s in np.unique(stratum_ids)]
+    else:
+        within = None
+
     if blocks is not None:
         block_ids = np.asarray(blocks)[usable]
         groups = [np.flatnonzero(block_ids == b) for b in np.unique(block_ids)]
@@ -140,7 +151,11 @@ def permutation_null_auc(
 
     null = np.empty(draws)
     for draw in range(draws):
-        if groups is None:
+        if within is not None:
+            shuffled = y.copy()
+            for members in within:
+                shuffled[members] = rng.permutation(y[members])
+        elif groups is None:
             shuffled = rng.permutation(y)
         else:
             shuffled = y.copy()
@@ -183,3 +198,64 @@ def benjamini_hochberg(p_values: np.ndarray, alpha: float = 0.05) -> np.ndarray:
     adjusted[finite] = result
     del alpha
     return adjusted
+
+
+def permutation_null_pooled(
+    target: np.ndarray,
+    probabilities: np.ndarray,
+    dates: np.ndarray,
+    folds: np.ndarray,
+    draws: int = 300,
+    seed: int = 0,
+) -> PermutationNull:
+    """Null for predictions pooled across walk-forward folds.
+
+    Two dependencies have to survive into the null or the test overstates significance.
+    Base rates drift between folds, and a predictor that only tracks its own fold's base
+    rate already scores above 0.5 on the pooled set. And on any one session the tickers
+    move together, so their labels are not independent draws.
+
+    Whole sessions are therefore permuted within each fold: the label vector for one day
+    is swapped with another day's from the same fold. Fold base rates and same-day
+    cross-sectional structure both survive; only the link between a prediction and its
+    own outcome is broken.
+    """
+    y = np.asarray(target, dtype="float64")
+    p = np.asarray(probabilities, dtype="float64")
+    usable = np.isfinite(y) & np.isfinite(p)
+    y, p = y[usable], p[usable]
+    day = np.asarray(dates)[usable]
+    fold = np.asarray(folds)[usable]
+
+    if len(np.unique(y)) < 2:
+        return PermutationNull(*(float("nan"),) * 5, 0)
+
+    observed = float(roc_auc_score(y, p))
+    rng = np.random.default_rng(seed)
+
+    sessions_by_fold: list[list[np.ndarray]] = []
+    for f in np.unique(fold):
+        in_fold = fold == f
+        sessions_by_fold.append(
+            [np.flatnonzero(in_fold & (day == d)) for d in np.unique(day[in_fold])]
+        )
+
+    null = np.empty(draws)
+    for draw in range(draws):
+        shuffled = y.copy()
+        for sessions in sessions_by_fold:
+            order = rng.permutation(len(sessions))
+            for source, destination in enumerate(order):
+                take, place = sessions[destination], sessions[source]
+                size = min(len(take), len(place))
+                shuffled[place[:size]] = y[take[:size]]
+        null[draw] = roc_auc_score(shuffled, p)
+
+    return PermutationNull(
+        observed=observed,
+        mean=float(null.mean()),
+        std=float(null.std(ddof=1)),
+        p_value=float((null >= observed).mean()),
+        quantile_95=float(np.quantile(null, 0.95)),
+        draws=draws,
+    )
