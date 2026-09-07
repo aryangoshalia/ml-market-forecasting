@@ -220,3 +220,37 @@ class TestThresholdSelection:
         rng = np.random.default_rng(7)
         with pytest.raises(ValueError, match="threshold metric"):
             select_threshold(rng.integers(0, 2, 100).astype(float), rng.uniform(size=100), "kappa")
+
+    def test_isotonic_never_returns_a_degenerate_probability(self):
+        """A calibrated 0 that resolves to 1 has unbounded loss, so the ends are barred."""
+        rng = np.random.default_rng(9)
+        n = 4000
+        probabilities = rng.uniform(0.2, 0.8, n)
+        # a perfectly separable tail is what drives isotonic to a pure bin
+        target = (probabilities > 0.5).astype("float64")
+        calibrator = ProbabilityCalibrator(ISOTONIC).fit(probabilities, target)
+        adjusted = calibrator.transform(probabilities)
+        assert adjusted.min() > 0.0
+        assert adjusted.max() < 1.0
+        assert calibrator.floor_ > 0.0
+
+    def test_the_bound_tightens_with_more_calibration_data(self):
+        rng = np.random.default_rng(10)
+        small = rng.uniform(size=200)
+        large = rng.uniform(size=20000)
+        a = ProbabilityCalibrator(ISOTONIC).fit(small, (small > 0.5).astype("float64"))
+        b = ProbabilityCalibrator(ISOTONIC).fit(large, (large > 0.5).astype("float64"))
+        assert a.floor_ > b.floor_
+
+    def test_clipping_does_not_change_ranking(self):
+        rng = np.random.default_rng(11)
+        n = 3000
+        probabilities = rng.uniform(size=n)
+        target = (rng.uniform(size=n) < probabilities).astype("float64")
+        calibrator = ProbabilityCalibrator(ISOTONIC).fit(probabilities, target)
+        adjusted = calibrator.transform(probabilities)
+        from sklearn.metrics import roc_auc_score
+
+        assert roc_auc_score(target, adjusted) == pytest.approx(
+            roc_auc_score(target, calibrator._model.predict(probabilities)), abs=1e-9
+        )

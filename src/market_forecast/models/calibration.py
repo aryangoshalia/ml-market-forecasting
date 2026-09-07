@@ -22,8 +22,13 @@ _EPSILON = 1e-6
 
 @dataclass
 class ProbabilityCalibrator:
+    """Isotonic regression maps a pure bin to exactly 0 or 1, which claims certainty no
+    finite sample supports and makes log loss unbounded. Outputs are therefore bounded
+    away from the ends by Laplace's rule of succession on the calibration sample."""
+
     method: str = ISOTONIC
     fitted_: bool = False
+    floor_: float = _EPSILON
 
     def fit(self, probabilities: np.ndarray, target: np.ndarray) -> ProbabilityCalibrator:
         if self.method not in CALIBRATION_METHODS:
@@ -31,6 +36,8 @@ class ProbabilityCalibrator:
 
         clean = np.isfinite(probabilities) & np.isfinite(target)
         p, y = probabilities[clean], target[clean]
+
+        self.floor_ = min(1.0 / (len(y) + 2.0), 0.01) if len(y) else _EPSILON
 
         if self.method == NONE or len(np.unique(y)) < 2:
             self.method = NONE if self.method == NONE else self.method
@@ -54,8 +61,10 @@ class ProbabilityCalibrator:
         if self._model is None:
             return probabilities
         if self.method == ISOTONIC:
-            return np.clip(self._model.predict(probabilities), 0.0, 1.0)
-        return self._model.predict_proba(_logit(probabilities).reshape(-1, 1))[:, 1]
+            adjusted = self._model.predict(probabilities)
+        else:
+            adjusted = self._model.predict_proba(_logit(probabilities).reshape(-1, 1))[:, 1]
+        return np.clip(adjusted, self.floor_, 1.0 - self.floor_)
 
 
 def _logit(probabilities: np.ndarray) -> np.ndarray:
