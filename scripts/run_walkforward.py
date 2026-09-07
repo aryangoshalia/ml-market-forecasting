@@ -37,7 +37,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--panel", default=None)
     parser.add_argument("--targets", nargs="*", default=["direction", "excess_direction"])
     parser.add_argument("--horizons", nargs="*", type=int, default=None)
-    parser.add_argument("--groups", nargs="*", default=["dev"])
+    parser.add_argument("--groups", nargs="*", default=["dev"], help="groups the model trains on")
+    parser.add_argument(
+        "--eval-groups",
+        nargs="*",
+        default=None,
+        help="groups to score on; defaults to --groups. Use to score held-out assets.",
+    )
     parser.add_argument("--start", default=None, help="e.g. 2010-01-01 for the robustness check")
     parser.add_argument("--max-folds", type=int, default=None)
     parser.add_argument("--calibration", default="isotonic", choices=["isotonic", "platt", "none"])
@@ -91,6 +97,7 @@ def main() -> int:
                 models=specs,
                 calibration=args.calibration,
                 groups=args.groups,
+                eval_groups=args.eval_groups,
                 start=start,
                 max_folds=args.max_folds,
                 seed=config.walkforward.seed,

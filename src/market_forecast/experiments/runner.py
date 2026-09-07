@@ -34,6 +34,7 @@ class RunConfig:
     calibration: str = ISOTONIC
     threshold_metric: str = "balanced_accuracy"
     groups: list[str] = field(default_factory=lambda: ["dev"])
+    eval_groups: list[str] | None = None
     start: pd.Timestamp | None = None
     max_folds: int | None = None
     seed: int = 17
@@ -41,6 +42,15 @@ class RunConfig:
     @property
     def label_column(self) -> str:
         return f"{self.target}_{self.horizon}d"
+
+    @property
+    def scored_groups(self) -> list[str]:
+        """Groups the model is scored on. Defaults to the groups it trains on."""
+        return self.eval_groups or self.groups
+
+    @property
+    def is_held_out(self) -> bool:
+        return self.eval_groups is not None and set(self.eval_groups) != set(self.groups)
 
     def identity(self) -> dict[str, Any]:
         return {
@@ -50,6 +60,7 @@ class RunConfig:
             "calibration": self.calibration,
             "threshold_metric": self.threshold_metric,
             "groups": sorted(self.groups),
+            "eval_groups": sorted(self.scored_groups),
             "start": str(self.start) if self.start is not None else None,
             "max_folds": self.max_folds,
             "seed": self.seed,
@@ -71,10 +82,10 @@ class WalkForwardRunner:
         self.config = config
         self.run_config = run_config
 
-    def _selected_rows(self) -> pd.DataFrame:
+    def _selected_rows(self, groups: list[str]) -> pd.DataFrame:
         frame = self.panel.frame
-        if self.run_config.groups:
-            frame = frame[frame["group"].isin(self.run_config.groups)]
+        if groups:
+            frame = frame[frame["group"].isin(groups)]
         if self.run_config.start is not None:
             dates = frame.index.get_level_values("date")
             frame = frame[dates >= self.run_config.start]
@@ -85,12 +96,16 @@ class WalkForwardRunner:
 
     def run(self) -> RunResult:
         started = time.perf_counter()
-        rows = self._selected_rows()
+        train_rows = self._selected_rows(self.run_config.groups)
+        scored_rows = self._selected_rows(self.run_config.scored_groups)
         features = self.panel.feature_names
         label = self.run_config.label_column
 
-        dates = pd.Series(rows.index.get_level_values("date"), index=rows.index)
-        sessions = pd.DatetimeIndex(dates.unique()).sort_values()
+        train_dates = pd.Series(train_rows.index.get_level_values("date"), index=train_rows.index)
+        scored_dates = pd.Series(
+            scored_rows.index.get_level_values("date"), index=scored_rows.index
+        )
+        sessions = pd.DatetimeIndex(train_dates.unique()).sort_values()
 
         splitter = WalkForwardSplitter(self.config.walkforward, self.run_config.horizon)
         folds = splitter.split(sessions)
@@ -100,12 +115,15 @@ class WalkForwardRunner:
             folds = folds[: self.run_config.max_folds]
 
         logger.info(
-            "%s h=%d | %s | %d rows, %d tickers",
+            "%s h=%d | %s | train %d rows / %d tickers | score %d rows / %d tickers%s",
             self.run_config.target,
             self.run_config.horizon,
             splitter.describe(sessions),
-            len(rows),
-            rows.index.get_level_values("ticker").nunique(),
+            len(train_rows),
+            train_rows.index.get_level_values("ticker").nunique(),
+            len(scored_rows),
+            scored_rows.index.get_level_values("ticker").nunique(),
+            " [held out]" if self.run_config.is_held_out else "",
         )
 
         prediction_blocks: list[pd.DataFrame] = []
@@ -113,8 +131,12 @@ class WalkForwardRunner:
 
         for fold in folds:
             fold_started = time.perf_counter()
+            # Fitting and calibration draw from the training groups; the test window is
+            # taken from the scored groups, which may be entirely different tickers.
             parts = {
-                part: rows[fold.mask(dates, part).to_numpy()] for part in ("fit", "inner", "test")
+                "fit": train_rows[fold.mask(train_dates, "fit").to_numpy()],
+                "inner": train_rows[fold.mask(train_dates, "inner").to_numpy()],
+                "test": scored_rows[fold.mask(scored_dates, "test").to_numpy()],
             }
             if any(len(block) == 0 for block in parts.values()):
                 logger.warning("fold %d has an empty window, skipping", fold.index)
@@ -202,14 +224,18 @@ class WalkForwardRunner:
             fold_metrics=fold_metrics,
             folds=folds,
             dataset={
-                "rows": int(len(rows)),
-                "tickers": sorted(rows.index.get_level_values("ticker").unique()),
+                "rows": int(len(scored_rows)),
+                "train_rows": int(len(train_rows)),
+                "train_tickers": sorted(train_rows.index.get_level_values("ticker").unique()),
+                "tickers": sorted(scored_rows.index.get_level_values("ticker").unique()),
                 "first_session": str(sessions[0].date()),
                 "last_session": str(sessions[-1].date()),
                 "n_sessions": int(len(sessions)),
                 "groups": sorted(self.run_config.groups),
+                "eval_groups": sorted(self.run_config.scored_groups),
+                "held_out": self.run_config.is_held_out,
                 "label": label,
-                "base_rate": float(rows[label].mean()),
+                "base_rate": float(scored_rows[label].mean()),
             },
             elapsed_seconds=time.perf_counter() - started,
         )
