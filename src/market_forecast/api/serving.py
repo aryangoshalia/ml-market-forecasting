@@ -171,6 +171,9 @@ class ServingModelStore:
         if key in self._cache:
             return self._cache[key]
 
+        # joblib deserialisation executes code, so the cache directory is trusted the same
+        # way the source tree is. The path is derived from fixed names rather than request
+        # input, the file is only ever written by this process, and it is not distributed.
         blob, meta_path = self._paths(target, horizon, model_name)
         if blob.exists() and meta_path.exists():
             try:

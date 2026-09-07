@@ -2,7 +2,7 @@ PYTHON := .venv/bin/python
 PIP := .venv/bin/pip
 
 .DEFAULT_GOAL := help
-.PHONY: help setup data panel audit docs walkforward tune leaderboard results demo-data analysis serve setup-web web verify test lint format typecheck check clean clean-cache
+.PHONY: help setup data panel audit docs walkforward tune leaderboard results demo-data demo analysis serve setup-web web verify test lint format typecheck check clean clean-cache
 
 help:
 	@echo "setup      create .venv and install the pinned dependencies"
@@ -15,6 +15,7 @@ help:
 	@echo "leaderboard  compare recorded runs against their baselines"
 	@echo "results    regenerate docs/RESULTS.md from the recorded runs"
 	@echo "demo-data  rebuild the compact artefacts shipped with the repo"
+	@echo "demo       regenerate one formulation end to end, about 20 minutes"
 	@echo "analysis   regenerate docs/ANALYSIS.md (regimes, SHAP, errors, friction)"
 	@echo "serve      run the local API on 127.0.0.1:8000"
 	@echo "setup-web  install the frontend dependencies"
@@ -61,6 +62,13 @@ results:
 
 demo-data:
 	$(PYTHON) scripts/build_demo_data.py
+
+# Regenerates the shipped prediction history for one formulation from scratch. Useful if
+# you want to confirm the committed artefacts came out of the pipeline in this repository.
+demo:
+	$(PYTHON) scripts/run_walkforward.py --groups dev --targets excess_direction \
+		--horizons 1 --experiment demo
+	$(PYTHON) scripts/build_demo_data.py --experiment demo
 
 analysis:
 	$(PYTHON) scripts/make_analysis.py
