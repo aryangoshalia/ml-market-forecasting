@@ -32,7 +32,7 @@ class RunConfig:
     horizon: int = 1
     models: list[ModelSpec] = field(default_factory=default_specs)
     calibration: str = ISOTONIC
-    threshold_metric: str = "f1"
+    threshold_metric: str = "balanced_accuracy"
     groups: list[str] = field(default_factory=lambda: ["dev"])
     start: pd.Timestamp | None = None
     max_folds: int | None = None

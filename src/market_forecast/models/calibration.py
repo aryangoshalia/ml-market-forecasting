@@ -12,10 +12,14 @@ import numpy as np
 from sklearn.isotonic import IsotonicRegression
 from sklearn.linear_model import LogisticRegression
 
+from market_forecast.logging import get_logger
+
 ISOTONIC = "isotonic"
 PLATT = "platt"
 NONE = "none"
 CALIBRATION_METHODS = (NONE, ISOTONIC, PLATT)
+
+logger = get_logger(__name__)
 
 _EPSILON = 1e-6
 
@@ -82,10 +86,17 @@ class ThresholdChoice:
 def select_threshold(
     target: np.ndarray,
     probabilities: np.ndarray,
-    metric: str = "f1",
+    metric: str = "balanced_accuracy",
     grid: np.ndarray | None = None,
 ) -> ThresholdChoice:
-    """Pick the decision threshold that maximises ``metric`` on the supplied window."""
+    """Pick the decision threshold that maximises ``metric`` on the supplied window.
+
+    The default is balanced accuracy rather than F1. F1 rewards recall, so against a
+    classifier whose ranking is barely better than chance its maximum sits at the lowest
+    threshold on the grid: predict positive for everything, take recall of one, and
+    accept precision near the base rate. That is the metric behaving as defined, and it
+    is the wrong metric for choosing a decision boundary at this signal level.
+    """
     from sklearn.metrics import balanced_accuracy_score, f1_score
 
     clean = np.isfinite(probabilities) & np.isfinite(target)
@@ -93,6 +104,12 @@ def select_threshold(
     candidates = grid if grid is not None else np.linspace(0.05, 0.95, 91)
 
     if len(np.unique(y)) < 2:
+        return ThresholdChoice(threshold=0.5, metric=metric, score=float("nan"))
+
+    # A constant predictor scores identically at every threshold below its own value, so
+    # searching returns an arbitrary tie rather than a choice. The baselines are exactly
+    # this, and warning about them would bury the cases that matter.
+    if len(np.unique(p)) < 2:
         return ThresholdChoice(threshold=0.5, metric=metric, score=float("nan"))
 
     scorers = {
@@ -109,4 +126,12 @@ def select_threshold(
         score = float(score_fn(y, (p >= candidate).astype(float)))
         if score > best_score:
             best, best_score = float(candidate), score
+
+    if best <= candidates[0] or best >= candidates[-1]:
+        logger.warning(
+            "threshold for %s settled on the edge of the search grid at %.2f, "
+            "which usually means the metric is degenerate for this classifier",
+            metric,
+            best,
+        )
     return ThresholdChoice(threshold=best, metric=metric, score=best_score)
