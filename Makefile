@@ -2,7 +2,7 @@ PYTHON := .venv/bin/python
 PIP := .venv/bin/pip
 
 .DEFAULT_GOAL := help
-.PHONY: help setup data panel audit docs walkforward tune leaderboard results demo-data analysis serve verify test lint format typecheck check clean clean-cache
+.PHONY: help setup data panel audit docs walkforward tune leaderboard results demo-data analysis serve setup-web web verify test lint format typecheck check clean clean-cache
 
 help:
 	@echo "setup      create .venv and install the pinned dependencies"
@@ -17,6 +17,8 @@ help:
 	@echo "demo-data  rebuild the compact artefacts shipped with the repo"
 	@echo "analysis   regenerate docs/ANALYSIS.md (regimes, SHAP, errors, friction)"
 	@echo "serve      run the local API on 127.0.0.1:8000"
+	@echo "setup-web  install the frontend dependencies"
+	@echo "web        run the dashboard on localhost:3000 (needs serve in another terminal)"
 	@echo "verify     quick end-to-end check: fetch, audit, and a short run"
 	@echo "test       run the test suite"
 	@echo "lint       ruff check"
@@ -65,6 +67,12 @@ analysis:
 
 serve:
 	$(PYTHON) scripts/serve.py
+
+setup-web:
+	cd frontend && npm install
+
+web:
+	cd frontend && npm run dev
 
 verify:
 	$(PYTHON) scripts/fetch_data.py --groups dev
